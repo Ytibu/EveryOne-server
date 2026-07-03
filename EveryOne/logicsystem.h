@@ -16,10 +16,14 @@ friend class Singleton<LogicSystem>;
 public:
 	~LogicSystem();
 	bool HandleGet(const std::string& path, std::shared_ptr<HttpConnection> conn);
+	bool HandlePost(const std::string& path, std::shared_ptr<HttpConnection> conn);
 	void RegGet(const std::string& path, HttpHandler handler);
+	void RegPost(const std::string& path, HttpHandler handler);
 
 private:
 	LogicSystem();
-	std::map<std::string, HttpHandler> _post_handlers;
-	std::map<std::string, HttpHandler> _get_handlers;
+
+private:
+	std::map<std::string, HttpHandler> _post_handlers;	// post请求处理函数
+	std::map<std::string, HttpHandler> _get_handlers;	// get请求处理函数
 };

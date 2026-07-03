@@ -13,6 +13,7 @@ private:
 	void CheckDeadline();
 	void WirteResponse();
 	void handleReq();
+	void PreParseGetParam();// 预解析get请求参数
 
 private:
 	tcp::socket _socket;
@@ -22,4 +23,6 @@ private:
 
 	net::steady_timer _dealine{ _socket.get_executor(), std::chrono::seconds(60) };
 
+	std::string _get_url;
+	std::unordered_map<std::string, std::string> _get_param;
 };

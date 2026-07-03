@@ -8,3 +8,10 @@ namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;
+
+enum ErrorCodes
+{
+    RPCFailed = 1,
+    InvalidEmail = 2,
+    EmailSendFailed = 3,
+};
