@@ -2,6 +2,8 @@
 #include <map>
 #include <string>
 
+#include "singleton.h"
+
 struct SectionInfo
 {
     SectionInfo() {}
@@ -39,10 +41,13 @@ public:
     ConfigManager(const ConfigManager &other) : _config_map(other._config_map) {}
     ConfigManager &operator=(const ConfigManager &other);
 
-    // bool LoadConfig(const std::string &filePath);
-    // std::string GetValue(const std::string &section, const std::string &key);
-
     SectionInfo operator[](const std::string &section) const;
+
+    static ConfigManager &GetInstance()
+    {
+        static ConfigManager instance;
+        return instance;
+    }
 
 private:
     std::map<std::string, SectionInfo> _config_map;
