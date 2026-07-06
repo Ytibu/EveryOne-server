@@ -3,12 +3,12 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <string>
-#include <iostream>
+#include "logger.h"
 
 ConfigManager::ConfigManager()
 {
     boost::filesystem::path configFilePath = boost::filesystem::current_path() / "config.ini";
-    std::cout << "Loading config from: " << configFilePath.string() << std::endl;
+    LOG_INFO(std::string("Loading config from: ") + configFilePath.string());
     boost::property_tree::ptree pt;
     boost::property_tree::ini_parser::read_ini(configFilePath.string(), pt);
     for (const auto &section : pt)
@@ -24,10 +24,10 @@ ConfigManager::ConfigManager()
     // 输出所有Kv对
     for (const auto &section : _config_map)
     {
-        std::cout << "[" << section.first << "]" << std::endl;
+        LOG_INFO(std::string("[") + section.first + "]");
         for (const auto &keyValue : section.second.keyValues)
         {
-            std::cout << keyValue.first << "=" << keyValue.second << std::endl;
+            LOG_INFO(keyValue.first + "=" + keyValue.second);
         }
     }
 }

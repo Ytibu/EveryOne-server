@@ -8,6 +8,6 @@ public:
 	void start();
 
 private:
-	tcp::acceptor _acceptor;
-	boost::asio::io_context& _ioc;
+	tcp::acceptor m_acceptor;
+	boost::asio::io_context& m_ioc;
 };

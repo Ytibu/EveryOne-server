@@ -7,6 +7,7 @@ set(CMAKE_TOOLCHAIN_FILE /home/dingjr/software/vcpkg/scripts/buildsystems/vcpkg.
 find_package(protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(jsoncpp REQUIRED)
+find_package(hiredis REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
     
 add_executable(EveryOne
@@ -27,5 +28,6 @@ target_link_libraries(EveryOne PRIVATE
     jsoncpp
     Boost::system
     Boost::filesystem
+    hiredis::hiredis
     pthread
 )

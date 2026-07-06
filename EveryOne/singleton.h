@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <mutex>
-
+// Meyer's Singleton: 线程安全的局部静态对象，返回引用而非 shared_ptr
+// - 自动 lazy-init（C++11 保证静态局部变量初始化的线程安全）
+// - 避免 static shared_ptr 跨编译单元析构顺序问题
+// - 零堆分配，无引用计数开销
 template<typename T>
 class Singleton {
 protected:
@@ -10,21 +11,12 @@ protected:
     Singleton(const Singleton<T>&) = delete;
     Singleton& operator=(const Singleton<T>& st) = delete;
 
-    virtual ~Singleton() = default;  // 保持 protected，支持多态
-
-    static std::shared_ptr<T> _instance;
+    virtual ~Singleton() = default;
 
 public:
-    static std::shared_ptr<T> GetInstance()
+    static T& GetInstance()
     {
-        static std::once_flag s_flag;
-        std::call_once(s_flag, [&]() {
-            _instance = std::shared_ptr<T>(new T);
-        });
-        return _instance;
+        static T instance;
+        return instance;
     }
-
 };
-
-template<typename T>
-std::shared_ptr<T> Singleton<T>::_instance = nullptr;

@@ -33,7 +33,6 @@ struct SectionInfo
 class ConfigManager
 {
 public:
-    ConfigManager();
     ~ConfigManager()
     {
         _config_map.clear();
@@ -48,6 +47,9 @@ public:
         static ConfigManager instance;
         return instance;
     }
+
+private:
+    ConfigManager();
 
 private:
     std::map<std::string, SectionInfo> _config_map;

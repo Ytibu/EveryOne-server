@@ -4,6 +4,7 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <shared_mutex>
 #include "singleton.h"
 
 class HttpConnection;
@@ -26,4 +27,6 @@ private:
 private:
 	std::map<std::string, HttpHandler> _post_handlers;	// post请求处理函数
 	std::map<std::string, HttpHandler> _get_handlers;	// get请求处理函数
+	mutable std::shared_mutex _get_mutex;	// get路由表读写锁
+	mutable std::shared_mutex _post_mutex;	// post路由表读写锁
 };
