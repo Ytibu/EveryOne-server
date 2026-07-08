@@ -4,13 +4,18 @@ project(EveryOne LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_TOOLCHAIN_FILE /home/dingjr/software/vcpkg/scripts/buildsystems/vcpkg.cmake)
 
+# 设置输出目录
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+
 find_package(protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(hiredis REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
     
-add_executable(EveryOne
+set(CORE_SOURCES
     EveryOne/cserver.cc
     EveryOne/httpconnection.cc
     EveryOne/logicsystem.cc
@@ -19,10 +24,12 @@ add_executable(EveryOne
     EveryOne/message.grpc.pb.cc
     EveryOne/iocontext_pool.cc
     EveryOne/verifygrpcclient.cc
-    EveryOne.cc
+    EveryOne/redismgr.cc
 )
+
+add_library(EveryOnelib SHARED ${CORE_SOURCES})
     
-target_link_libraries(EveryOne PRIVATE
+target_link_libraries(EveryOnelib PUBLIC
     protobuf::libprotobuf
     gRPC::grpc++
     jsoncpp
@@ -30,4 +37,22 @@ target_link_libraries(EveryOne PRIVATE
     Boost::filesystem
     hiredis::hiredis
     pthread
+)
+
+# 2. 创建主程序可执行文件
+add_executable(EveryOne
+    EveryOne.cc
+)
+
+target_link_libraries(EveryOne PUBLIC
+    EveryOnelib
+)
+
+# 2. 创建测试程序可执行文件
+add_executable(testRedis
+    test/testRedis.cc
+)
+
+target_link_libraries(testRedis PUBLIC
+    EveryOnelib
 )

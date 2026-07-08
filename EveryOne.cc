@@ -19,8 +19,7 @@ int main()
 			ioc.stop(); 
 		});
 
-		std::shared_ptr<CServer> cserver = std::make_shared<CServer>(ioc, port);
-		cserver->start();
+		std::make_shared<CServer>(ioc, port)->start();
 		
 		ioc.run();
 	}

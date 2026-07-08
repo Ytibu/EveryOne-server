@@ -4,6 +4,7 @@
 #include <jsoncpp/json/json.h>
 #include "verifygrpcclient.h"
 #include "logger.h"
+#include "redismgr.h"
 
 LogicSystem::LogicSystem()
 {
@@ -48,6 +49,49 @@ LogicSystem::LogicSystem()
 		std::string responseBody = root.toStyledString();
 		conn->AppendResponseBody(responseBody);
 		return; 
+	});
+
+	RegPost("/user_register", [](std::shared_ptr<HttpConnection> conn) {
+		auto body = conn->GetRequestBody();
+		LOG_INFO(std::string("receive user_register req, body: ") + body); 
+		conn->SetContentType("text/json");
+
+		Json::Value root;	// 创建一个 JSON 根对象
+		Json::Reader reader;	// 创建一个 JSON 解析器
+		Json::Value response;	// 用于存储解析后的数据
+
+		bool parsingSuccessful = reader.parse(body, root);
+		if (!parsingSuccessful)
+		{
+			LOG_WARN(std::string("Failed to parse JSON: ") + reader.getFormattedErrorMessages());
+			conn->SetStatusCode(http::status::bad_request);
+			response["error"] = "Invalid JSON format";
+			conn->AppendResponseBody(response.toStyledString());
+			return;
+		}
+
+
+		// redis查询验证码是否过期
+		std::string verify_code;
+		bool get_verify = RedisMgr::GetInstance().Get(root["email"].asString(), verify_code);
+		if(!get_verify)
+		{
+			LOG_WARN("Verification code expired or not found in Redis");
+			conn->SetStatusCode(http::status::bad_request);
+			response["error"] = "Verification code expired or not found";
+			conn->AppendResponseBody(response.toStyledString());
+			return;
+		}
+
+		root["error"] = 0;
+		root["email"] = response["email"];
+		root["user"] = response["user"];
+		root["passwd"] = response["passwd"];
+		root["confirm"] = response["confirm"];
+		root["verifyCode"] = response["verifyCode"];
+		std::string responseBody = root.toStyledString();
+		conn->AppendResponseBody(responseBody);
+		return;
 	});
 }
 
