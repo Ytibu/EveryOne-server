@@ -14,6 +14,21 @@ find_package(gRPC CONFIG REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(hiredis REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
+
+# find_package(PkgConfig REQUIRED)
+find_path(MYSQLCPP_CONN_INCLUDE_DIR
+    NAMES cppconn/connection.h
+    PATHS /usr/include /usr/local/include
+)
+
+find_library(MYSQLCPP_CONN_LIBRARY
+    NAMES mysqlcppconn
+    PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+)
+
+if(NOT MYSQLCPP_CONN_INCLUDE_DIR OR NOT MYSQLCPP_CONN_LIBRARY)
+    message(FATAL_ERROR "Could not find system MySQL Connector/C++ headers or library")
+endif()
     
 set(CORE_SOURCES
     EveryOne/cserver.cc
@@ -25,9 +40,14 @@ set(CORE_SOURCES
     EveryOne/iocontext_pool.cc
     EveryOne/verifygrpcclient.cc
     EveryOne/redismgr.cc
+    EveryOne/mysql.cc
 )
 
 add_library(EveryOnelib SHARED ${CORE_SOURCES})
+
+target_include_directories(EveryOnelib PUBLIC
+    ${MYSQLCPP_CONN_INCLUDE_DIR}
+)
     
 target_link_libraries(EveryOnelib PUBLIC
     protobuf::libprotobuf
@@ -37,6 +57,7 @@ target_link_libraries(EveryOnelib PUBLIC
     Boost::filesystem
     hiredis::hiredis
     pthread
+    ${MYSQLCPP_CONN_LIBRARY}
 )
 
 # 2. 创建主程序可执行文件
