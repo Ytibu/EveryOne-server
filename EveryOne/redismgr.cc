@@ -10,10 +10,8 @@
 // RedisConPool — 连接池实现
 // ============================================================================
 
-RedisConPool::RedisConPool(std::size_t pool_size, const std::string &host,
-                           int port, const std::string &password)
-    : m_isStop(false), m_poolSize(pool_size), m_host(host), m_port(port),
-      m_password(password)
+RedisConPool::RedisConPool(std::size_t pool_size, const std::string &host, int port, const std::string &password)
+    : m_isStop(false), m_poolSize(pool_size), m_host(host), m_port(port), m_password(password)
 {
     for (std::size_t i = 0; i < m_poolSize; ++i)
     {
@@ -153,10 +151,10 @@ RedisMgr::RedisMgr()
     : m_isStop(false)
 {
     auto &config = ConfigManager::GetInstance();
-    std::string host = config["RedisServer"]["host"];
-    std::string port_str = config["RedisServer"]["port"];
-    std::string pass = config["RedisServer"]["password"];
-    std::string pool_size_str = config["RedisServer"]["pool_size"];
+    std::string host = config["redis"]["host"];
+    std::string port_str = config["redis"]["port"];
+    std::string pass = config["redis"]["password"];
+    std::string pool_size_str = config["redis"]["pool_size"];
 
     if (host.empty())
         host = "127.0.0.1";

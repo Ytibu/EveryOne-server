@@ -41,6 +41,8 @@ set(CORE_SOURCES
     EveryOne/verifygrpcclient.cc
     EveryOne/redismgr.cc
     EveryOne/mysql.cc
+    EveryOne/mysql_dao.cc
+    EveryOne/mysql_mgr.cc
 )
 
 add_library(EveryOnelib SHARED ${CORE_SOURCES})

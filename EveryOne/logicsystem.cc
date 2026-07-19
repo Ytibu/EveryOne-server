@@ -5,6 +5,11 @@
 #include "verifygrpcclient.h"
 #include "logger.h"
 #include "redismgr.h"
+#include "mysql_mgr.h"
+#include "header.h"
+
+#define CODEPREFIX "code_"
+
 
 LogicSystem::LogicSystem()
 {
@@ -16,13 +21,13 @@ LogicSystem::LogicSystem()
 		}
 	});
 
-	RegPost("/post_test", [](std::shared_ptr<HttpConnection> conn){
+	RegPost("/post_test", [](std::shared_ptr<HttpConnection> conn) {
 		auto body = conn->GetRequestBody();
 		LOG_INFO(std::string("receive post_test req, body: ") + body); 
-		conn->SetContentType("text/json");
+		conn->SetContentType("application/json");
 		Json::Value root;	// 创建一个 JSON 根对象
 		Json::Reader reader;	// 创建一个 JSON 解析器
-		Json::Value data;	// 用于存储解析后的数据
+
 		bool parsingSuccessful = reader.parse(body, root);
 		if (!parsingSuccessful)
 		{
@@ -51,47 +56,86 @@ LogicSystem::LogicSystem()
 		return; 
 	});
 
-	RegPost("/user_register", [](std::shared_ptr<HttpConnection> conn) {
-		auto body = conn->GetRequestBody();
-		LOG_INFO(std::string("receive user_register req, body: ") + body); 
-		conn->SetContentType("text/json");
+	RegPost("/user_register", [](std::shared_ptr<HttpConnection> connection) {
+		auto body_str = connection->GetRequestBody();
+		LOG_INFO(std::string("receive user_register req, body: ") + body_str);
+		connection->SetContentType("application/json");
 
-		Json::Value root;	// 创建一个 JSON 根对象
-		Json::Reader reader;	// 创建一个 JSON 解析器
-		Json::Value response;	// 用于存储解析后的数据
-
-		bool parsingSuccessful = reader.parse(body, root);
-		if (!parsingSuccessful)
-		{
-			LOG_WARN(std::string("Failed to parse JSON: ") + reader.getFormattedErrorMessages());
-			conn->SetStatusCode(http::status::bad_request);
-			response["error"] = "Invalid JSON format";
-			conn->AppendResponseBody(response.toStyledString());
-			return;
+		Json::Value root;
+		Json::Reader reader;
+		Json::Value src_root;
+		bool parse_success = reader.parse(body_str, src_root);
+		if (!parse_success) {
+			LOG_WARN("Failed to parse JSON data!");
+			root["error"] = ErrorCodes::Error_Json;
+			std::string jsonstr = root.toStyledString();
+			connection->AppendResponseBody(jsonstr);
+			return true;
 		}
 
-
-		// redis查询验证码是否过期
-		std::string verify_code;
-		bool get_verify = RedisMgr::GetInstance().Get(root["email"].asString(), verify_code);
-		if(!get_verify)
-		{
-			LOG_WARN("Verification code expired or not found in Redis");
-			conn->SetStatusCode(http::status::bad_request);
-			response["error"] = "Verification code expired or not found";
-			conn->AppendResponseBody(response.toStyledString());
-			return;
+		auto hasField = [&src_root](const std::string& key) {
+			return src_root.isMember(key) && !src_root[key].asString().empty();
+		};
+		if (!hasField("email") || !hasField("user") || !hasField("password") || !hasField("confirm") || !hasField("verifycode")) {
+			LOG_WARN("Missing required field in JSON request");
+			root["error"] = ErrorCodes::Error_Json;
+			std::string jsonstr = root.toStyledString();
+			connection->AppendResponseBody(jsonstr);
+			return true;
 		}
 
+		auto email = src_root["email"].asString();
+		auto name = src_root["user"].asString();
+		auto pwd = src_root["password"].asString();
+		auto confirm = src_root["confirm"].asString();
+
+		if (pwd != confirm) {
+			std::cout << "password err " << std::endl;
+			root["error"] = ErrorCodes::PasswdErr;
+			std::string jsonstr = root.toStyledString();
+			connection->AppendResponseBody(jsonstr);
+			return true;
+		}
+
+		//先查找redis中email对应的验证码是否合理
+		std::string  varify_code;
+		bool b_get_varify = RedisMgr::GetInstance().Get(CODEPREFIX+src_root["email"].asString(), varify_code);
+		if (!b_get_varify) {
+			std::cout << " get varify code expired" << std::endl;
+			root["error"] = ErrorCodes::VarifyExpired;
+			std::string jsonstr = root.toStyledString();
+			connection->AppendResponseBody(jsonstr);
+			return true;
+		}
+
+		std::string request_varify_code = src_root["verifycode"].asString();
+		if (request_varify_code.empty() || varify_code != request_varify_code) {
+			std::cout << " varify code error" << std::endl;
+			root["error"] = ErrorCodes::VarifyCodeErr;
+			std::string jsonstr = root.toStyledString();
+			connection->AppendResponseBody(jsonstr);
+			return true;
+		}
+
+		//查找数据库判断用户是否存在
+		int uid = MysqlMgr::GetInstance().registerUser(name, email, pwd);
+		if (uid == 0 || uid == -1) {
+			std::cout << " user or email exist" << std::endl;
+			root["error"] = ErrorCodes::UserExist;
+			std::string jsonstr = root.toStyledString();
+			connection->AppendResponseBody(jsonstr);
+			return true;
+		}
 		root["error"] = 0;
-		root["email"] = response["email"];
-		root["user"] = response["user"];
-		root["passwd"] = response["passwd"];
-		root["confirm"] = response["confirm"];
-		root["verifyCode"] = response["verifyCode"];
-		std::string responseBody = root.toStyledString();
-		conn->AppendResponseBody(responseBody);
-		return;
+		root["uid"] = uid;
+		root["email"] = email;
+		root ["user"]= name;
+		root ["password"]= pwd;
+		root ["confirm"]= confirm;
+		root["verifycode"] = request_varify_code;
+		std::string jsonstr = root.toStyledString();
+		connection->AppendResponseBody(jsonstr);
+		return true; 
 	});
 }
 

@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
 #include "header.h"
+#include "logicsystem.h"
 
 class HttpConnection : public std::enable_shared_from_this<HttpConnection>
 {
+	friend class LogicSystem;
 public:
 	HttpConnection(boost::asio::io_context &ioc);
 	void start();

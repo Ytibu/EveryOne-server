@@ -23,16 +23,16 @@ MysqlDao::~MysqlDao()
     m_pool->close();
 }
 
-bool MysqlDao::registerUser(const std::string &username, const std::string &email, const std::string &password)
+int MysqlDao::registerUser(const std::string &username, const std::string &email, const std::string &password)
 {
     auto conn = m_pool->getConnection();
     try{
         if(conn == nullptr){
-            return true;
+            return 1;
         }
 
         // 准备调用存储过程
-        std::unique_ptr<sql::PreparedStatement> pstmt(conn->conn_->prepareStatement("CALL register_user(?, ?, ?, @result)"));
+        std::unique_ptr<sql::PreparedStatement> pstmt(conn->conn_->prepareStatement("CALL reg_user(?, ?, ?, @result)"));
         
         // 设置输入参数
         pstmt->setString(1, username);
@@ -51,12 +51,12 @@ bool MysqlDao::registerUser(const std::string &username, const std::string &emai
             return result;
         }
         m_pool->releaseConnection(std::move(conn));
-        return false; // 如果没有结果，返回错误码
+        return 0; // 如果没有结果，返回错误码
 
     }catch(const sql::SQLException &e){
         LOG_ERROR(std::string("MysqlDao registerUser failed: ") + e.what());
         m_pool->releaseConnection(std::move(conn));
-        return false;
+        return 0; // 返回错误码
     }
 }
 

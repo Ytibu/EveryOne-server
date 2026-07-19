@@ -10,7 +10,7 @@ class MysqlDao
 public:
     MysqlDao();
     ~MysqlDao();
-    bool registerUser(const std::string &username, const std::string &email, const std::string &password);
+    int registerUser(const std::string &username, const std::string &email, const std::string &password);
     bool checkEmail(const std::string &name, const std::string &email);
     bool updatePassword(const std::string &name, const std::string &newPassword);
     bool checkPassword(const std::string &name, const std::string &password, UserInfo &userInfo);
