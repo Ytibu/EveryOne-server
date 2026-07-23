@@ -25,3 +25,13 @@ enum ErrorCodes {
 	CREATE_CHAT_FAILED = 1012, //创建聊天失败
 	LOAD_CHAT_FAILED = 1013, //加载聊天失败
 };
+
+class Defer
+{
+public:
+    Defer(std::function<void()> func) : m_func(func) {}
+    ~Defer() { m_func(); }
+
+private:
+    std::function<void()> m_func;
+};

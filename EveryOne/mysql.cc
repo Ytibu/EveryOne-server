@@ -1,6 +1,7 @@
 #include "mysql.h"
 #include "logger.h"
 #include "config_manager.h"
+#include "header.h"
 
 #include <cppconn/exception.h>
 #include <cppconn/driver.h>

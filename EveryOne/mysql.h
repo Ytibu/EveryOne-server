@@ -12,15 +12,6 @@
  * @brief 一个简单的RAII（资源获取与释放）风格类，用于在函数作用域结束时执行特定函数。
  * 
  */
-class Defer
-{
-public:
-    Defer(std::function<void()> func) : m_func(func) {}
-    ~Defer() { m_func(); }
-
-private:
-    std::function<void()> m_func;
-};
 
 class SqlConnection
 {

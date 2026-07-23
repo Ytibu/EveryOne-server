@@ -1,5 +1,6 @@
 #include "mysql_dao.h"
 
+#include "header.h"
 #include "logger.h"
 #include "config_manager.h"
 #include <cppconn/exception.h>
@@ -62,15 +63,117 @@ int MysqlDao::registerUser(const std::string &username, const std::string &email
 
 bool MysqlDao::checkEmail(const std::string &name, const std::string &email)
 {
-    return false;
+    auto conn = m_pool->getConnection();
+    try{
+        if(conn == nullptr){
+            return false;
+        }
+
+        // 准备调用存储过程
+        std::unique_ptr<sql::PreparedStatement> pstmt(conn->conn_->prepareStatement("SELECT email FROM user WHERE name = ?"));
+        
+        // 设置输入参数
+        pstmt->setString(1, name);
+        
+        // 执行查询
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+
+        // 检查查询结果
+        while(res->next()) {
+            std::string result = res->getString("email");
+            LOG_INFO("checkEmail result: " + result);
+
+            if(result != email){
+                m_pool->releaseConnection(std::move(conn));
+                return false; // 邮箱不匹配
+            }
+            m_pool->releaseConnection(std::move(conn));
+            return true; // 邮箱匹配
+        }
+        return true;
+
+    }catch(const sql::SQLException &e){
+        LOG_ERROR(std::string("MysqlDao checkEmail failed: ") + e.what());
+        m_pool->releaseConnection(std::move(conn));
+        return false;
+    }
 }
 
 bool MysqlDao::updatePassword(const std::string &name, const std::string &newPassword)
 {
-    return false;
+    auto conn = m_pool->getConnection();
+    try{
+        if(conn == nullptr){
+            return false;
+        }
+
+        // 准备调用存储过程
+        std::unique_ptr<sql::PreparedStatement> pstmt(conn->conn_->prepareStatement("UPDATE user SET pwd = ? WHERE name = ?"));
+        
+        // 设置输入参数
+        pstmt->setString(1, newPassword);
+        pstmt->setString(2, name);
+        
+        // 执行存储过程
+        int updateCount = pstmt->executeUpdate();
+        LOG_INFO("updatePassword updateCount: " + std::to_string(updateCount));
+        LOG_INFO("updatePassword name: " + name + ", newPassword: " + newPassword);
+        m_pool->releaseConnection(std::move(conn));
+        return true;
+    }catch(const sql::SQLException &e){
+        LOG_ERROR("SQLException: " + std::string(e.what()));
+        m_pool->releaseConnection(std::move(conn));
+        return false;
+    }
 }
 
-bool MysqlDao::checkPassword(const std::string &name, const std::string &password, UserInfo &userInfo)
+bool MysqlDao::checkPassword(const std::string &email, const std::string &password, UserInfo &userInfo)
 {
-    return false;
+    LOG_INFO(email + " :: " + password);
+    auto conn = m_pool->getConnection();
+    if(conn == nullptr){
+            return false;
+        }
+
+    Defer defer([this, &conn](){
+        m_pool->releaseConnection(std::move(conn));
+    });
+
+    try{
+        // mysql查询语句，使用预处理语句防止SQL注入
+        std::unique_ptr<sql::PreparedStatement> pstmt(conn->conn_->prepareStatement("SELECT * FROM user WHERE email = ?"));
+        
+        // 设置输入参数
+        pstmt->setString(1, email);
+        
+        // 执行查询
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+
+        // 检查查询结果
+        std::string originalPassword = "";
+        while (res->next())
+        {
+            originalPassword = res->getString("pwd");
+            LOG_INFO("checkPassword originalPassword: " + originalPassword);
+            break;
+        }
+
+        if(originalPassword != password){
+            LOG_WARN("checkPassword failed: password mismatch or user not found");
+            return false; // 密码不匹配或用户不存在
+        }
+
+        userInfo.username = res->getString("name");
+        userInfo.email = res->getString("email");
+        userInfo.uid = res->getInt("uid");
+        userInfo.password = originalPassword;
+
+        m_pool->releaseConnection(std::move(conn));
+        return true;
+
+    }catch(const sql::SQLException &e){
+        LOG_ERROR("SQLException: " + std::string(e.what()));
+        m_pool->releaseConnection(std::move(conn));
+        return false;
+    }
 }

@@ -43,6 +43,7 @@ set(CORE_SOURCES
     EveryOne/mysql.cc
     EveryOne/mysql_dao.cc
     EveryOne/mysql_mgr.cc
+    EveryOne/status_grpc_client.cc
 )
 
 add_library(EveryOnelib SHARED ${CORE_SOURCES})

@@ -1,4 +1,5 @@
 #include "iocontext_pool.h"
+#include "logger.h"
 
 IOContextPool::IOContextPool(std::size_t pool_size)
     : m_ioService(pool_size), m_works(pool_size), m_nextIOService(0)
@@ -21,7 +22,7 @@ IOContextPool::IOContextPool(std::size_t pool_size)
             catch (const std::exception &e)
             {
                 // 业务 handler 异常穿透至此；线程退出但池整体不受影响
-                // TODO: 接入日志系统记录 e.what()
+                LOG_ERROR(std::string("IOContextPool thread exception: ") + e.what());
             }
         });
     }
